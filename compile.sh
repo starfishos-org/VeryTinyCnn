@@ -1,0 +1,1 @@
+g++ -o feature -Iinclude -std=c++11 -O3 -g -Wall -Wextra -Wno-unused-parameter -lpthread -ljpeg -mavx2 feature.cpp

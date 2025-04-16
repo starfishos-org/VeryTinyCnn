@@ -1,6 +1,6 @@
 features = 004 008 012 016 020 040 080 200 400
 
-CXXFLAGS = -Iinclude -std=c++11 -O3 -Wall -Wextra -Wno-unused-parameter -lpthread -lX11
+CXXFLAGS = -Iinclude -std=c++11 -O3 -g -Wall -Wextra -Wno-unused-parameter -lpthread -ljpeg
 AVX_ENABLED = $(shell grep avx2 /proc/cpuinfo)
 CXXFLAGS += $(if $(AVX_ENABLED),-mavx2)
 

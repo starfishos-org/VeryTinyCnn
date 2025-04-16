@@ -13,8 +13,15 @@
 #include "layers/reshape.h"
 #include "layers/bias.h"
 
+extern "C" {
+    int g_thread_cnt;
+    std::vector<int> thread_bind_cpu_list;
+    bool external_thread_bind_cpu = false;
+    std::string thread_bind_cpu_list_filename;
+}
+
 struct program_options {
-    const char *alexnet, *pca, *output;
+    const char *alexnet, *pca, *output, *filelists;
     bool binary, verbose;
     std::size_t threads_num, batch_size;
     std::vector<const char *> files;
@@ -40,6 +47,7 @@ int main(int argc, const char *argv[])
     program_options options = parse_args(argc, argv);
     if (options.verbose)
         print_options(options);
+    tnn::proc_bind_thread(thread_bind_cpu_list[0]);
 
     tnn::thread_pool threads(options.threads_num);
 
@@ -140,7 +148,7 @@ const char *help_str = ""
 
 program_options parse_args(int argc, const char *argv[]) {
     program_options options {
-            nullptr, nullptr, nullptr,
+            nullptr, nullptr, nullptr, nullptr,
             false, false,
             std::thread::hardware_concurrency(), std::thread::hardware_concurrency(),
             {}
@@ -177,6 +185,15 @@ program_options parse_args(int argc, const char *argv[]) {
                 options.output = argv[i];
             } else
                 options.output = argv[i] + 9;
+        } else if (!std::strcmp(argv[i], "-l") || (!std::strncmp(argv[i], "--lists=", 8) && sh--)) {
+            if (sh) {
+                if (++i == argc) {
+                    std::cerr << "feature: requires path to output file after \"-o\"" << std::endl;
+                    std::exit(1);
+                }
+                options.filelists = argv[i];
+            } else
+                options.filelists = argv[i] + 8;
         } else if (!std::strcmp(argv[i], "-t") || (!std::strncmp(argv[i], "--threads=", 10) && sh--)) {
             if (sh) {
                 if (++i == argc) {
@@ -224,9 +241,28 @@ program_options parse_args(int argc, const char *argv[]) {
         std::cerr << "feature: requires at least one data option" << std::endl;
         exit(1);
     }
+    if (options.filelists) {
+        std::ifstream in(options.filelists, std::ios::in);
+        if (!in) {
+            std::cerr << "feature: failed to open file lists file \"" << options.filelists << "\"" << std::endl;
+            std::exit(1);
+        }
+        std::string line;
+        while (std::getline(in, line)) {
+            char *tmp = new char[line.size() + 1];
+            strcpy(tmp, line.c_str());
+            options.files.push_back(tmp);
+        }
+    }
     if (options.files.empty()) {
         std::cerr << "feature: requires at least one input file" << std::endl;
         std::exit(1);
+    }
+    std::string bind_cpu_file = "cnn_bind_cpu.txt";
+    std::ifstream in_file(bind_cpu_file, std::ios::in);
+    g_thread_cnt = (int)options.threads_num;
+    if (in_file.is_open()) {
+        tnn::parse_cpu_bind_file(bind_cpu_file);
     }
     return options;
 }

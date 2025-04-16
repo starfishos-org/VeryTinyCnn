@@ -36,8 +36,8 @@ Python libraries:
 
 To extract features from images, type
 
-    make feature data/alexnet data/pca/nn-<feature-num>.dat
-    ./feature -a data/alexnet -p data/pca/nn-<feature-num>.dat -v -o <output> <images>...
+    make feature data/alexnet.dat data/pca/nn-<feature-num>.dat
+    ./feature -a data/alexnet.dat -p data/pca/nn-<feature-num>.dat -v -o <output> <images>...
 
 To plot extracted features (feature number set in Makefile) with tSNE, type
 
