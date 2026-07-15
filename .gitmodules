@@ -1,4 +1,3 @@
 [submodule "libjpeg"]
 	path = libjpeg
 	url = https://github.com/starfishos-org/libjpeg.git
-	branch = starfishos-test
