@@ -1,3 +1,4 @@
 [submodule "libjpeg"]
 	path = libjpeg
-	url = git@ipads.se.sjtu.edu.cn:nvsys/FITS/demos/libjpeg.git
+	url = https://github.com/starfishos-org/libjpeg.git
+	branch = chcore
