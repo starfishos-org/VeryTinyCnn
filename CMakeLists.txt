@@ -3,6 +3,7 @@ set(LIBJPEG_DIR ${CMAKE_CURRENT_SOURCE_DIR}/libjpeg)
 add_custom_target(
   libjpeg-build
   WORKING_DIRECTORY ${LIBJPEG_DIR}
+  COMMAND make clean
   COMMAND make CC=${CMAKE_C_COMPILER}
 )
 
@@ -16,7 +17,7 @@ target_link_options(tiny-cnn PRIVATE -static)
 target_link_libraries(tiny-cnn PRIVATE libjpeg rpmalloc-static libc-static libstdc++-static)
 target_include_directories(tiny-cnn PRIVATE ${LIBJPEG_DIR} ${CMAKE_CURRENT_SOURCE_DIR}/include)
 
-target_compile_definitions(tiny-cnn PRIVATE CHCORE)
+target_compile_definitions(tiny-cnn PRIVATE CHCORE cimg_display=0)
 
 target_compile_options(tiny-cnn PRIVATE -mavx2)
 

@@ -14,7 +14,7 @@
 #include "layers/bias.h"
 
 extern "C" {
-    int g_thread_cnt;
+    uint32_t g_thread_cnt;
     std::vector<int> thread_bind_cpu_list;
     bool external_thread_bind_cpu = false;
     std::string thread_bind_cpu_list_filename;
@@ -47,7 +47,8 @@ int main(int argc, const char *argv[])
     program_options options = parse_args(argc, argv);
     if (options.verbose)
         print_options(options);
-    tnn::proc_bind_thread(thread_bind_cpu_list[0]);
+    if (!thread_bind_cpu_list.empty())
+        tnn::proc_bind_thread(thread_bind_cpu_list[0]);
 
     tnn::thread_pool threads(options.threads_num);
 
@@ -260,9 +261,11 @@ program_options parse_args(int argc, const char *argv[]) {
     }
     std::string bind_cpu_file = "cnn_bind_cpu.txt";
     std::ifstream in_file(bind_cpu_file, std::ios::in);
-    g_thread_cnt = (int)options.threads_num;
-    if (in_file.is_open()) {
-        tnn::parse_cpu_bind_file(bind_cpu_file);
+    g_thread_cnt = static_cast<uint32_t>(options.threads_num);
+    if (in_file.is_open() && tnn::parse_cpu_bind_file(bind_cpu_file) != 0) {
+        std::cerr << "feature: invalid CPU bind file \"" << bind_cpu_file
+                  << "\"" << std::endl;
+        std::exit(1);
     }
     return options;
 }

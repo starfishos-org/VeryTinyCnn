@@ -28,8 +28,19 @@ namespace tnn {
         cpu_set_t mask;
         CPU_ZERO(&mask);
         CPU_SET(cpu_id, &mask);
-        if (sched_setaffinity(0, sizeof(mask), &mask) == -1) {
-            perror("sched_setaffinity");
+        /* The resource-util bind files use cluster-global CPU IDs.  ChCore's
+         * special tid -2 preserves those IDs; tid 0 would reinterpret them as
+         * local IDs and add the current machine's CPU-range offset again. */
+#ifdef CHCORE
+        int ret = sched_setaffinity(-2, sizeof(mask), &mask);
+#else
+        int ret = sched_setaffinity(0, sizeof(mask), &mask);
+#endif
+        if (ret < 0) {
+            std::fprintf(stderr,
+                         "sched_setaffinity failed for global CPU %d: %d\n",
+                         cpu_id, ret);
+            std::exit(EXIT_FAILURE);
         }
         sched_yield();
     }
@@ -37,7 +48,7 @@ namespace tnn {
     class thread_pool {
     public:
         thread_pool(std::size_t threads_n = std::thread::hardware_concurrency()) : stop(false) {
-            for(int i = 0; i < threads_n; i++) {
+            for(std::size_t i = 0; i < threads_n; i++) {
                 workers.emplace_back(std::bind(&thread_pool::run, this, i));
             }
         }
@@ -62,7 +73,12 @@ namespace tnn {
         std::size_t get_thread_num() const {
             return workers.size();
         }
-        void run(int cpu_id) {
+        void run(std::size_t worker_id) {
+            int cpu_id = static_cast<int>(worker_id);
+            if (external_thread_bind_cpu &&
+                worker_id < thread_bind_cpu_list.size()) {
+                cpu_id = thread_bind_cpu_list[worker_id];
+            }
             proc_bind_thread(cpu_id);
             while(true) {
                 std::function<void()> task;
